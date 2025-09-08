@@ -1,0 +1,59 @@
+
+task: >
+  You have been given single-end FASTQ data from human samples.
+  The reads are processed through a workflow consisting of Bowtie2 (host genome alignment), samtools (conversion), fastp (trimming and QC), and MultiQC (summary).
+  Using the provided log outputs, answer the following.
+
+questions:
+  - id: q1
+    stage: alignment
+    text: |
+      What is the overall alignment rate for SRR27827169?
+    answer_type: numeric_percent
+    tolerance: 0.5
+
+  - id: q2
+    stage: alignment
+    text: |
+      For SRR27827226, what is the reported overall alignment rate?
+    answer_type: numeric_percent
+    tolerance: 0.5
+
+  - id: q3
+    stage: alignment
+    text: |
+      For SRR27827169, how many reads aligned exactly one time?
+    answer_type: integer_exact
+
+  - id: q4
+    stage: quality_control
+    text: |
+      Approximately what percentage of reads were discarded during trimming and quality control for SRR27827169?
+    answer_type: numeric_percent
+    tolerance: 1.0
+
+  - id: q5
+    stage: quality_control
+    text: |
+      For SRR27827234, how many reads were removed during QC?
+    answer_type: integer_exact
+
+  - id: q6
+    stage: quality_control
+    text: |
+      For SRR27827226, what was the percentage of Q30 bases after filtering?
+    answer_type: numeric_percent
+    tolerance: 0.5
+
+  - id: q7
+    stage: quality_control
+    text: |
+      What adapter sequence was detected by fastp in these samples?
+    answer_type: string_exact
+
+  - id: q8
+    stage: quality_control
+    text: |
+      For SRR27827232, what was the reported duplication rate?
+    answer_type: numeric_percent
+    tolerance: 0.5

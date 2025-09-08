@@ -1,0 +1,8 @@
+paper_title: Dynamics of Gut Microbiota After Fecal Microbiota Transplantation in Ulcerative Colitis
+doi: 10.1093/ecco-jcc/jjae137
+data_source: "SRA Bioproject: PRJNA1071720"
+domain: 16sRNA
+ref_genome: GRCh8.p7
+tools: [bowtie2 2.4.2, samtools 1.11, fastp 0.20.1, MuktiQC 1.9]
+estimated_runtime_minutes: 1:36 
+estimated_time_for_human: 
