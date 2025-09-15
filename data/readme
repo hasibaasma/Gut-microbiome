@@ -1,0 +1,5 @@
+The dataset includes multiple samples under different conditions (209 samples) and was originally sequenced using Illumina NovaSeq platform (100 bp single end read). 
+The subsampled and cleaned FASTQs (SRRs.fastq.gz) are stored here in data/ and are used as the inputs for the 01. workflow
+
+
+
