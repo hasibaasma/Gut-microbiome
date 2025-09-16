@@ -9,11 +9,13 @@ This workflow reproduces analyses from the study
  
 ## 2️. Download Raw Data
 Use the SRA Toolkit to fetch FASTQ files from NCBI SRA:
-```mkdir -p data
+```
+mkdir -p data
 fasterq-dump SRR27827162 --threads 8 --outdir data
 ```
 This produces:
-```data/SRR27827162.fastq
+```
+data/SRR27827162.fastq
  ```
 ## 3. Subsampling
 To reduce runtime, you may down-sample reads to 10 % with seqtk:
@@ -40,7 +42,8 @@ sample2.fastq.gz
 (to simplify automation).
 #### b. Build Host Genome Index
 Create a Bowtie2 index for the host genome (e.g. human GRCh38):
-```bowtie2-build GRCh38.fa host_reference
+```
+bowtie2-build GRCh38.fa host_reference
 ```
 #### c. Host Read Removal, Trimming & QC
 •	Bowtie2: map reads to host reference and keep unmapped reads.
@@ -59,7 +62,8 @@ fastp \
   --thread 8
 ```
 Summarize results:
-```multiqc . -o multiqc_report
+```
+multiqc . -o multiqc_report
 ```
 You can automate the entire pre-processing phase:
 ```
@@ -89,14 +93,17 @@ Convert the merged table into a phyloseq object and perform key ecological analy
 •	Principal Component Analysis (PCA) – ordination of samples using Aitchison (CLR) distance to explore clustering patterns (e.g. donors vs. responders).
 •	Simpson dominance – a diversity index reflecting whether a few taxa dominate or the community is evenly distributed.
 #### Requirements
-R ≥ 4.2 and the following packages:
+R ≥ 4.2 and its packages:
 
-```install.packages(c("phyloseq","ggplot2","vegan"))
+```
+install.packages(c("phyloseq","ggplot2","vegan"))
 if (!requireNamespace("microbiome", quietly = TRUE))
     BiocManager::install("microbiome")
 ```
 #### Run analysis
+```
 Rscript scripts/03_postprocess.R
+```
 #### Outputs
 • mOTUs_phyloseq.rds – phyloseq object for further custom analysis
 • mOTUs_family_barplot.png – stacked barplot of relative abundances
