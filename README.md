@@ -1,138 +1,107 @@
-
-
-#  README
-
-## 1. Data sources
-
-This task is based on publicly available data from a study of **Dynamics of Gut Microbiota After Fecal Microbiota Transplantation in Ulcerative Colitis: Success Linked to Control of Prevotellaceae**. (https://pmc.ncbi.nlm.nih.gov/articles/PMC11836888/#s27) The dataset includes multiple samples under different conditions (209 samples) and was originally sequenced using **Illumina NovaSeq platform (100 bp single end read)**.
-The subsampled and cleaned FASTQs are stored in `data/` and are used as the inputs for the workflow.
-
----
-
-## 2. How to download
-
-The raw data can be downloaded from NCBI’s SRA database using the SRA Toolkit. For example, to download a sample (SRR27827162) into the data/ folder:
+#Gut Microbiome mOTUs Workflow
+## 1️. Study & Data Sources
+This workflow reproduces analyses from the study
+“Dynamics of Gut Microbiota After Fecal Microbiota Transplantation in Ulcerative Colitis: Success Linked to Control of Prevotellaceae”
+(PMC11836888).
+•	Sequencing platform: Illumina NovaSeq (100 bp single-end)
+•	Dataset: 209 publicly available gut‐microbiome samples.
+•	Inputs: Subsampled and cleaned FASTQ files in data/.
+ 
+## 2️. Download Raw Data
+Use the SRA Toolkit to fetch FASTQ files from NCBI SRA:
+```mkdir -p data
+fasterq-dump SRR27827162 --threads 8 --outdir data
 ```
-mkdir -p data
-
-# Download FASTQ using fasterq-dump
-fasterq-dump SRR27827162 \
-  --threads 8 \
-  --outdir data
-
+This produces:
+```data/SRR27827162.fastq
+ ```
+## 3. Subsampling
+To reduce runtime, you may down-sample reads to 10 % with seqtk:
 ```
-This will generate
-```
-data/SRR27827162.fastq
-```
-
----
-
-## 3. Pre-processing / subsampling
-
-To make the dataset smaller and faster to process for testing, I randomly subsampled reads using seqtk. So to keep 10% of reads this was done  
-```.
 for f in data/*.fastq; do
-    base=$(basename $f .fastq)
-    seqtk sample -s100 $f 0.1 > data/${base}_sub.fastq
+    base=$(basename "$f" .fastq)
+    seqtk sample -s100 "$f" 0.1 > "data/${base}_sub.fastq"
 done
-
+``` 
+## 4️. Workflow Overview
+The complete analysis consists of three main stages:
+1.	Pre-processing: Host-read removal, quality control and summary reports.
+2.	Taxonomic profiling: mOTUs v3 for species-level abundance tables.
+3.	Downstream R analysis: Microbiota composition, PCA ordination and diversity metrics.
+All commands below assume a Linux/macOS environment with required tools installed.
+ 
+### 4.1 Pre-processing
+#### a. Organize FASTQ Files
+Rename or reorganize raw reads into a consistent pattern such as:
 ```
-
----
-
-## 4. How the workflow works
-Removal of host genome uses **Bowtie2** to map reads to reference genome  
-Filter unmapped paired reads from output using **Samtools**  
-Quality Trimming, adapter removal and low complexity filtering is done with **\ Fastp** 
-Reports of mapping and quality trimming are generated with **\ MultiQC**  
-The input files is stored in `data/`.  
-
----
-### Step 1 - Organize your files
-**Purpose:** Ensure raw single-end sequencing reads are consistently named for downstream workflow compatibility.  
-**Tools:** None (manual or scripting via mv, rename, or bash loop).  
-**Inputs:** Raw FASTQ files with arbitrary names from sequencing provider.  
-**Outputs:** Renamed FASTQ files following convention:
 sample1.fastq.gz
 sample2.fastq.gz
-**Command:**
 ```
-# Example using rename to standardize to sampleX.fastq.gz
-rename 's/(.*)\.fastq\.gz$/sample_$1.fastq.gz/' *.fastq.gz 
+(to simplify automation).
+#### b. Build Host Genome Index
+Create a Bowtie2 index for the host genome (e.g. human GRCh38):
+```bowtie2-build GRCh38.fa host_reference
 ```
----
-
-### Step 2 - Build host genome index
-
-**Purpose:** Create a searchable index of the host reference genome for efficient read alignment (needed for host read removal).  
-**Tools:** Bowtie2   
-**Inputs:** Host reference genome FASTA file (e.g., GRCh38.fa).   
-**Outputs:** Bowtie2 index files (host_reference.1.bt2, host_reference.2.bt2, …, host_reference.rev.2.bt2).  
- 
-**Command:**
-
-```
-bowtie2-build GRCh38.fa host_reference
-```
-
----
-### Step 3 – Quality Trimming & Adapter Removal
- 
-**Purpose:** Improve read quality by removing low-quality bases, adapters, and very short reads. This ensures better mapping and reduces false positives in downstream analyses.  
-**Tools:** fastp  
-**Inputs:**  
-Paired-end FASTQ files after host removal  
-  sample1_hostRemoved_R1.fastq.gz
-  sample1_hostRemoved_R2.fastq.gz  
-**Outputs:**  
-Cleaned FASTQ files  
-  sample1_trimmed_R1.fastq.gz  
-  sample1_trimmed_R2.fastq.gz  
-QC reports    
-  sample1_fastp.html (interactive QC report)
-  sample1_fastp.json (machine-readable QC summary)  
-**Command:**
+#### c. Host Read Removal, Trimming & QC
+•	Bowtie2: map reads to host reference and keep unmapped reads.
+•	Samtools: extract unmapped reads.
+•	fastp: trim adapters, low-quality ends and short reads.
+•	MultiQC: generate a combined QC report.
+Example fastp command:
 ```
 fastp \
   --in1 sample_hostRemoved_R1.fastq.gz \
-  --in2 sample_hostRemoved_R2.fastq.gz \
   --out1 sample_trimmed_R1.fastq.gz \
-  --out2 sample_trimmed_R2.fastq.gz \
   --cut_right --cut_window_size 4 --cut_mean_quality 20 \
   -l 50 \
-  --detect_adapter_for_pe \
-  -y \
-  --thread 8 \
   --html sample_fastp.html \
-  --json sample_fastp.json
-
+  --json sample_fastp.json \
+  --thread 8
 ```
-
----
-
-### Step 4 - Generate Summary Report
-
-**Purpose:** Aggregate QC and alignment results from multiple tools (Bowtie2, Samtools, Fastp) into a single, interactive report for easier interpretation and comparison across samples.  
-**Tools:** MultiQC  
-**Inputs:**  
-Log files and reports from previous steps, e.g.:
-  Bowtie2 alignment logs (*.log)
-  Samtools filtering logs (if any)
-  Fastp QC outputs (*.html, *.json)
-**Outputs:**  
-  Combined QC report:  
-  multiqc_report.html (interactive summary)  
-  multiqc_data/ (supporting data files)  
-**Command:**  
+Summarize results:
+```multiqc . -o multiqc_report
 ```
-multiqc . -o multiqc_report
-```
-
-All of the above steps can be executed in one go using following command. Make sure you execute this in data folder.
+You can automate the entire pre-processing phase:
 ```
 bash workflow.sh
 ```
----
+Outputs: cleaned FASTQ files in samples_trimmed/, plus an interactive report multiqc_report.html.
+ 
+### 4.2 mOTUs Taxonomic Profiling
+#### Installation (first time only)
+```
+pip install --upgrade motu-profiler
+motus downloadDB
+```
+#### Run profiling and merge tables
+```
+bash scripts/02_motusdb.sh
+```
+#### Outputs
+• Individual profiles: samples_trimmed/profiles/*.motus.tsv
+• Merged abundance table: samples_trimmed/merged_mOTUs_8_table.tsv
+(rows = mOTUs, columns = samples)
+This merged table is the input for downstream R analysis.
+ 
+### 4.3 Post-processing and R-based Analysis
+Convert the merged table into a phyloseq object and perform key ecological analyses:
+•	Microbiota community composition – visualize relative abundances of major families.
+•	Principal Component Analysis (PCA) – ordination of samples using Aitchison (CLR) distance to explore clustering patterns (e.g. donors vs. responders).
+•	Simpson dominance – a diversity index reflecting whether a few taxa dominate or the community is evenly distributed.
+#### Requirements
+R ≥ 4.2 and the following packages:
 
+```install.packages(c("phyloseq","ggplot2","vegan"))
+if (!requireNamespace("microbiome", quietly = TRUE))
+    BiocManager::install("microbiome")
+```
+#### Run analysis
+Rscript scripts/03_postprocess.R
+#### Outputs
+• mOTUs_phyloseq.rds – phyloseq object for further custom analysis
+• mOTUs_family_barplot.png – stacked barplot of relative abundances
+• mOTUs_PCA.png – PCA ordination plot
+• mOTUs_simpson_diversity.csv – Simpson dominance values per sample
+These deliver a concise overview of the gut-microbiota community structure and diversity.
+You can continue exploring differential abundance or longitudinal trends using the saved mOTUs_phyloseq.rds.
 
