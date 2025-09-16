@@ -1,14 +1,14 @@
-#Gut Microbiome mOTUs Workflow
+# Gut Microbiome mOTUs Workflow
 ## 1️. Study & Data Sources
-This workflow reproduces analyses from the study
+This workflow reproduces analyses from the study  
 “Dynamics of Gut Microbiota After Fecal Microbiota Transplantation in Ulcerative Colitis: Success Linked to Control of Prevotellaceae”
-(PMC11836888).
-•	Sequencing platform: Illumina NovaSeq (100 bp single-end)
-•	Dataset: 209 publicly available gut‐microbiome samples.
-•	Inputs: Subsampled and cleaned FASTQ files in data/.
+(PMC11836888).  
+•	Sequencing platform: Illumina NovaSeq (100 bp single-end)  
+•	Dataset: 209 publicly available gut‐microbiome samples.  
+•	Inputs: Subsampled and cleaned FASTQ files in data/.  
  
 ## 2️. Download Raw Data
-Use the SRA Toolkit to fetch FASTQ files from NCBI SRA:
+Use the SRA Toolkit to fetch FASTQ files from NCBI SRA:  
 ```
 mkdir -p data
 fasterq-dump SRR27827162 --threads 8 --outdir data
@@ -18,7 +18,7 @@ This produces:
 data/SRR27827162.fastq
  ```
 ## 3. Subsampling
-To reduce runtime, you may down-sample reads to 10 % with seqtk:
+To reduce runtime, you may down-sample reads to 10 % with seqtk:  
 ```
 for f in data/*.fastq; do
     base=$(basename "$f" .fastq)
@@ -26,31 +26,31 @@ for f in data/*.fastq; do
 done
 ``` 
 ## 4️. Workflow Overview
-The complete analysis consists of three main stages:
-1.	Pre-processing: Host-read removal, quality control and summary reports.
-2.	Taxonomic profiling: mOTUs v3 for species-level abundance tables.
-3.	Downstream R analysis: Microbiota composition, PCA ordination and diversity metrics.
-All commands below assume a Linux/macOS environment with required tools installed.
+The complete analysis consists of three main stages:  
+1.	Pre-processing: Host-read removal, quality control and summary reports.  
+2.	Taxonomic profiling: mOTUs v3 for species-level abundance tables.  
+3.	Downstream R analysis: Microbiota composition, PCA ordination and diversity metrics.  
+All commands below assume a Linux/macOS environment with required tools installed.  
  
 ### 4.1 Pre-processing
-#### a. Organize FASTQ Files
-Rename or reorganize raw reads into a consistent pattern such as:
+#### a. Organize FASTQ Files  
+Rename or reorganize raw reads into a consistent pattern such as:  
 ```
 sample1.fastq.gz
 sample2.fastq.gz
 ```
-(to simplify automation).
-#### b. Build Host Genome Index
-Create a Bowtie2 index for the host genome (e.g. human GRCh38):
+(to simplify automation).     
+#### b. Build Host Genome Index   
+Create a Bowtie2 index for the host genome (e.g. human GRCh38):    
 ```
 bowtie2-build GRCh38.fa host_reference
 ```
-#### c. Host Read Removal, Trimming & QC
-•	Bowtie2: map reads to host reference and keep unmapped reads.
-•	Samtools: extract unmapped reads.
-•	fastp: trim adapters, low-quality ends and short reads.
-•	MultiQC: generate a combined QC report.
-Example fastp command:
+#### c. Host Read Removal, Trimming & QC 
+•	Bowtie2: map reads to host reference and keep unmapped reads.  
+•	Samtools: extract unmapped reads.  
+•	fastp: trim adapters, low-quality ends and short reads.  
+•	MultiQC: generate a combined QC report.  
+Example fastp command:  
 ```
 fastp \
   --in1 sample_hostRemoved_R1.fastq.gz \
